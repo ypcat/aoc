@@ -1,0 +1,328 @@
+# Advent of Code 2023
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.11.3"},
+  {:jason, "~> 1.4"}
+])
+```
+
+## Day 1
+
+```elixir
+input1a = Kino.Input.textarea("Input")
+```
+
+```elixir
+input1a
+|> Kino.Input.read()
+|> String.split("\n", trim: true)
+|> Enum.map(&(Regex.run(~r/\d/, &1) ++ Regex.run(~r/.*\K\d/, &1)))
+|> Enum.map(&(Enum.join(&1) |> String.to_integer()))
+|> Enum.sum()
+```
+
+```elixir
+input1b = Kino.Input.textarea("Input")
+```
+
+```elixir
+m =
+  ~w"one two three four five six seven eight nine"
+  |> Enum.with_index(1)
+  |> Enum.into(Map.new(1..9, &{"#{&1}", &1}))
+
+p1 = ~r/#{Enum.join(Map.keys(m), "|")}/
+p2 = ~r/.*\K(#{Regex.source(p1)})/
+
+input1b
+|> Kino.Input.read()
+|> String.split("\n", trim: true)
+|> Enum.map(&(m[hd(Regex.run(p1, &1))] * 10 + m[hd(Regex.run(p2, &1))]))
+|> Enum.sum()
+```
+
+## Day 2
+
+```elixir
+input2a = Kino.Input.textarea("Input")
+```
+
+```elixir
+input2a
+|> Kino.Input.read()
+|> String.split("\n", trim: true)
+|> Enum.flat_map(fn s ->
+  ["Game " <> i, t] = String.split(s, ": ")
+
+  String.split(t)
+  |> Enum.chunk_every(2)
+  |> Enum.map(fn [n, c] -> {String.first(c), String.to_integer(n)} end)
+  |> Enum.all?(fn {c, n} -> %{"r" => 12, "g" => 13, "b" => 14}[c] >= n end)
+  |> if do
+    [String.to_integer(i)]
+  else
+    []
+  end
+end)
+|> Enum.sum()
+```
+
+```elixir
+input2b = Kino.Input.textarea("Input")
+```
+
+```elixir
+input2b
+|> Kino.Input.read()
+|> String.split("\n", trim: true)
+|> Enum.map(fn s ->
+  [_, t] = String.split(s, ": ")
+
+  String.split(t)
+  |> Enum.chunk_every(2)
+  |> Enum.map(fn [n, c] -> {String.first(c), String.to_integer(n)} end)
+  |> Enum.reduce(Map.from_keys(~w"r g b", 0), fn {c, n}, m -> %{m | c => max(m[c], n)} end)
+  |> Map.values()
+  |> Enum.product()
+end)
+|> Enum.sum()
+```
+
+## Day 3
+
+```elixir
+input3a = Kino.Input.textarea("Input")
+```
+
+```elixir
+input3b = Kino.Input.textarea("Input")
+```
+
+```elixir
+input3b
+|> Kino.Input.read()
+|> String.split("\n", trim: true)
+|> Enum.with_index()
+|> Enum.flat_map(fn {s, i} ->
+  Regex.scan(~r/(\d+)|([#$%&*+\-\/=@])/, s, capture: :all_but_first, return: :index)
+  |> Enum.map(fn
+    [{-1, 0}, {j, 1}] -> {String.at(s, j), i, j}
+    [{j, n}] -> {String.slice(s, j..(j + n - 1)), i, j, n}
+  end)
+end)
+|> Enum.reduce({[], %{}}, fn
+  {s, i, j}, {a, b} -> {a, Map.put(b, {i, j}, s)}
+  {s, i, j, n}, {a, b} -> {[{s |> String.to_integer(), i, j, n} | a], b}
+end)
+|> then(fn {a, b} ->
+  a
+  |> Enum.flat_map(fn {d, i, j, n} ->
+    for(i <- (i - 1)..(i + 1), j <- (j - 1)..(j + n), do: b[{i, j}] != nil)
+    |> Enum.any?()
+    |> if do
+      [d]
+    else
+      []
+    end
+  end)
+end)
+|> Enum.sum()
+```
+
+```elixir
+input3b
+|> Kino.Input.read()
+|> String.split("\n", trim: true)
+|> Enum.with_index()
+|> Enum.flat_map(fn {s, i} ->
+  Regex.scan(~r/(\d+)|([#$%&*+\-\/=@])/, s, capture: :all_but_first, return: :index)
+  |> Enum.map(fn
+    [{-1, 0}, {j, 1}] -> {String.at(s, j), i, j}
+    [{j, n}] -> {String.slice(s, j..(j + n - 1)), i, j, n}
+  end)
+end)
+|> Enum.reduce({[], %{}}, fn
+  {s, i, j}, {a, b} -> {a, Map.put(b, {i, j}, s)}
+  {s, i, j, n}, {a, b} -> {[{s |> String.to_integer(), i, j, n} | a], b}
+end)
+|> then(fn {a, b} ->
+  a
+  |> Enum.flat_map(fn {d, i, j, n} ->
+    for(i <- (i - 1)..(i + 1), j <- (j - 1)..(j + n), do: {i, j})
+    |> Enum.flat_map(fn {i, j} -> if b[{i, j}] == "*", do: [{d, i, j}], else: [] end)
+  end)
+  |> Enum.reduce(%{}, fn {d, i, j}, acc -> Map.update(acc, {i, j}, [d], &[d | &1]) end)
+  |> Enum.flat_map(fn {_, v} -> if length(v) == 2, do: [Enum.product(v)], else: [] end)
+end)
+|> Enum.sum()
+```
+
+## Day 4
+
+```elixir
+input4a = Kino.Input.textarea("Input")
+```
+
+```elixir
+input4b = Kino.Input.textarea("Input")
+```
+
+```elixir
+input4b
+|> Kino.Input.read()
+|> String.split("\n", trim: true)
+|> Enum.map(fn s ->
+  [_, a, b] = String.split(s, [":", "|"])
+  a = String.split(a, " ", trim: true) |> MapSet.new()
+  b = String.split(b, " ", trim: true) |> MapSet.new()
+  Integer.pow(2, MapSet.intersection(a, b) |> MapSet.size()) |> div(2)
+end)
+|> Enum.sum()
+```
+
+```elixir
+input4b
+|> Kino.Input.read()
+|> String.split("\n", trim: true)
+|> Enum.map(fn s ->
+  [_, a, b] = String.split(s, [":", "|"])
+  a = String.split(a, " ", trim: true) |> MapSet.new()
+  b = String.split(b, " ", trim: true) |> MapSet.new()
+  MapSet.intersection(a, b) |> MapSet.size()
+end)
+|> Enum.reduce({0, []}, fn
+  n, {r, []} ->
+    {r + 1, List.duplicate(1, n)}
+
+  # |> IO.inspect(label: "#{n} #{r} []")
+  n, {r, [h | t]} ->
+    {r + h + 1,
+     Enum.zip(
+       List.duplicate(h + 1, n) ++ List.duplicate(0, max(n, length(t)) - n),
+       t ++ List.duplicate(0, max(n, length(t)) - length(t))
+     )
+     |> Enum.map(fn {x, y} -> x + y end)}
+
+    # |> IO.inspect(label: "#{n} #{r} #{inspect [h|t]}")
+end)
+|> then(fn {r, _} -> r end)
+```
+
+## Day 5
+
+```elixir
+input5a = Kino.Input.textarea("Input")
+```
+
+```elixir
+input5b = Kino.Input.textarea("Input")
+```
+
+```elixir
+input5a
+|> Kino.Input.read()
+|> String.split("\n\n", trim: true)
+|> then(fn ["seeds: " <> h | t] ->
+  seeds = h |> String.split() |> Enum.map(&String.to_integer/1)
+
+  maps =
+    for s <- Enum.map(t, &(String.split(&1, "\n") |> tl)) do
+      Enum.map(s, &(String.split(&1) |> Enum.map(fn i -> String.to_integer(i) end)))
+    end
+
+  maps
+  |> Enum.reduce(seeds, fn map, acc ->
+    for i <- acc do
+      case Enum.find(map, fn [_a, b, n] -> b <= i and i < b + n end) do
+        nil -> i
+        [a, b, _n] -> a + (i - b)
+      end
+    end
+  end)
+end)
+|> IO.inspect(charlists: :as_lists)
+|> Enum.min()
+```
+
+```elixir
+sections =
+  input5a
+  |> Kino.Input.read()
+  |> String.split("\n\n", trim: true)
+
+seeds =
+  sections
+  |> hd()
+  |> String.split()
+  |> tl()
+  |> Enum.map(&String.to_integer(&1))
+  |> Enum.chunk_every(2)
+  |> Enum.map(fn [start, len] -> {start, start + len - 1} end)
+
+maps =
+  sections
+  |> tl()
+  |> Enum.map(fn map ->
+    String.split(map, "\n")
+    |> tl()
+    |> Enum.map(fn segment ->
+      [dst, src, len] =
+        segment
+        |> String.split()
+        |> Enum.map(&String.to_integer/1)
+
+      {{src, src + len - 1}, {dst, dst + len - 1}}
+    end)
+  end)
+
+defmodule Day5 do
+  def tr(_seed = {a, b}, _seg = {{c, d}, {e, f}}) do
+    cond do
+      # a b c d || c d a b
+      b < c or d < a -> [{a, b}]
+      # c a b d
+      c <= a and b <= d -> [{e + a - c, e + b - c}]
+      # a c b d
+      a < c and c <= b and b <= d -> [{a, c - 1}, {e, e + b - c}]
+      # c a d b
+      c <= a and a <= d and d < b -> [{e + a - c, d}, {d + 1, b}]
+      # a c d b
+      a < c and d < b -> [{a, c - 1}, {c, d}, {d + 1, b}]
+    end
+    |> IO.inspect(label: inspect(seed: {a, b}, seg: {{c, d}, {e, f}}))
+  end
+
+  def tr(seeds = [_ | _], seg = {_, _}) do
+    Enum.flat_map(seeds, fn seed -> tr(seed, seg) end)
+    |> IO.inspect(label: inspect(seeds: seeds, seg: seg))
+  end
+
+  def tr(seed = {_, _}, map = [{_, _} | _]) do
+    # XXX TODO
+    tr([seed], map)
+    |> IO.inspect(label: inspect(seed: seed, map: map))
+  end
+
+  def tr(seeds = [_ | _], map = [{_, _} | _]) do
+    # XXX
+    Enum.reduce(map, seeds, fn seg, acc -> tr(acc, seg) end)
+    |> IO.inspect(label: inspect(seeds: seeds, map: map))
+  end
+
+  def tr(seed = {_, _}, maps = [[_ | _] | _]) do
+    tr([seed], maps)
+    |> IO.inspect(label: inspect(seed: seed, maps: maps))
+  end
+
+  def tr(seeds = [_ | _], maps = [[_ | _] | _]) do
+    Enum.reduce(maps, seeds, fn map, acc -> tr(acc, map) end)
+    |> IO.inspect(label: inspect(seeds: seeds, maps: maps))
+  end
+end
+
+# Day5.tr(hd(seeds), ((maps)))
+Day5.tr({82, 82}, maps)
+|> IO.inspect()
+|> Enum.min()
+```

@@ -1,0 +1,37 @@
+# AOC
+
+```elixir
+Mix.install([
+  {:kino_aoc, "~> 0.1.5"}
+])
+```
+
+## Section
+
+```elixir
+defmodule AOC do
+  def get_input(year, day) do
+    url = "https://adventofcode.com/#{year}/day/#{day}/input"
+    headers = [cookie: "session=#{System.get_env("LB_SESSION")}"]
+    Req.get!(url, headers: headers).body
+  end
+end
+```
+
+```elixir
+import AOC
+input = get_input(2015, 1)
+```
+
+```elixir
+input
+|> String.trim()
+|> String.to_charlist()
+|> Enum.map(
+  &case &1 do
+    ?( -> 1
+    ?) -> -1
+  end
+)
+|> Enum.sum()
+```
