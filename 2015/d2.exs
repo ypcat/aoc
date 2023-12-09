@@ -1,6 +1,6 @@
 #!/usr/bin/env elixir
 
-sample = """
+_sample = """
 2x3x4
 1x1x10
 """
@@ -1020,12 +1020,11 @@ end)
 |> IO.inspect(label: "part 1", charlists: :as_lists)
 
 # part 2
-sample
+input
 |> String.split("\n", trim: true)
 |> Enum.map(fn s ->
-  [l, w, h] = String.split(s, "x") |> Enum.map(&String.to_integer/1)
-  [m | _]=a = Enum.sort([l*w, w*h, h*l])
-  2 * Enum.sum(a) + m
+  [l, w, h] = String.split(s, "x") |> Enum.map(&String.to_integer/1) |> Enum.sort()
+  2 * (l + w) + l * w * h
 end)
 |> Enum.sum()
 |> IO.inspect(label: "part 2", charlists: :as_lists)
