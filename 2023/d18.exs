@@ -37,7 +37,7 @@ defmodule D0 do
     |> Enum.map(&String.split(&1) |> Enum.at(2) |> String.slice(2..7) |> String.split_at(5))
     |> Enum.reduce(%{current: {0, 0}}, fn {hex, dir}, acc ->
       n = String.to_integer(hex, 16)
-      {x, y}=p = acc.current
+      p = {x, y} = acc.current
       q = %{"0" => {x + n, y}, "1" => {x, y + n}, "2" => {x - n, y}, "3" => {x, y - n}}[dir]
       acc
       |> Map.update(p, [q], &[q | &1])
@@ -61,27 +61,26 @@ defmodule D0 do
           for i <- xi[x1]..xi[x2] - 1, into: acc, do: {{{ix[i], y1}, {ix[i + 1], y1}}, true}
       end
     end
-    for [x1, x2] <- xs |> Enum.chunk_every(2, 1, [999999999]), reduce: 0 do
-      all_sum ->
-        for [y1, y2] <- ys |> Enum.chunk_every(2, 1, [999999999]), reduce: {0, false} do
-          {sum, side} ->
-            bottom = edge[{{x1, y1}, {x2, y1}}]
-            left = edge[{{x1, y1}, {x1, y2}}]
-            side2 = if bottom, do: !side, else: side
-            area = cond do
-              side2 -> (x2 - x1) * (y2 - y1)
-              bottom && left -> (x2 - x1) + (y2 - y1) - 1
-              bottom -> x2 - x1
-              left -> y2 - y1
-              m[{x1, y1}] -> 1
-              true -> 0
-            end
-            #IO.inspect([p1: {x1, y1}, p2: {x2, y2}, edge1: m[{x1, y1}], side: side, side2: side2, bottom: bottom, left: left, area: area])
-            {sum + area, side2}
+    for [x1, x2] <- xs |> Enum.chunk_every(2, 1, [999999999]),
+        [y1, y2] <- ys |> Enum.chunk_every(2, 1, [999999999]),
+        reduce: {0, false}
+    do
+      {sum, side} ->
+        bottom = edge[{{x1, y1}, {x2, y1}}]
+        left = edge[{{x1, y1}, {x1, y2}}]
+        side2 = if bottom, do: !side, else: side
+        area = cond do
+          side2 -> (x2 - x1) * (y2 - y1)
+          bottom && left -> (x2 - x1) + (y2 - y1) - 1
+          bottom -> x2 - x1
+          left -> y2 - y1
+          m[{x1, y1}] -> 1
+          true -> 0
         end
-        |> elem(0)
-        |> then(&all_sum + &1)
+        #IO.inspect([p1: {x1, y1}, p2: {x2, y2}, edge1: m[{x1, y1}], side: side, side2: side2, bottom: bottom, left: left, area: area])
+        {sum + area, side2}
     end
+    |> elem(0)
   end
 end
 
