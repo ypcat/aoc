@@ -1,11 +1,9 @@
 #!/usr/bin/env elixir
 
-input = """
-"""
-
 defmodule D0 do
   def parse(input) do
-    input |> String.split("\n", trim: true)
+    input
+    |> String.split("\n", trim: true)
   end
   def part1(input) do
     input
@@ -15,8 +13,12 @@ defmodule D0 do
   end
 end
 
+input = """
+"""
+
 _ = """
 """
+
 input
 |> D0.parse()
 |> D0.part1()
@@ -24,6 +26,7 @@ input
 
 _ = """
 """
+
 input
 |> D0.parse()
 |> D0.part2()
