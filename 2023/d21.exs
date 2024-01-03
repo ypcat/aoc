@@ -6,8 +6,9 @@ defmodule D21 do
         {c, j} <- r |> to_charlist() |> Enum.with_index(),
         into: %{}, do: {{i, j}, c}
   end
+
   def part1(m) do
-    Enum.count(m, fn {_, c} -> c in [?., ?S] end)|>IO.inspect()
+    #Enum.count(m, fn {_, c} -> c in [?., ?S] end)|>IO.inspect()
     s = Enum.find_value(m, fn {p, c} -> c == ?S && p end)
     for _ <- 1..64, reduce: MapSet.new([s]) do
       acc -> for {i, j} <- acc,
@@ -17,45 +18,94 @@ defmodule D21 do
     end
     |> Enum.count()
   end
-  def mod({i, j}, n), do: {Integer.mod(i, n), Integer.mod(j, n)}
+
+  defmacro bind(value, var), do: quote(do: unquote(var) = unquote(value))
+  def mod2({i, j}, n), do: {Integer.mod(i, n), Integer.mod(j, n)}
+  def div2({i, j}, n), do: {Integer.floor_div(i, n), Integer.floor_div(j, n)}
+  def edge({0, 1}, k), do: {0, k}
+  def edge({1, 1}, k), do: div2({k, k + 1}, 2)
+  def edge({1, 0}, k), do: {k, 0}
+  def edge({1, -1}, k), do: div2({k + 1, -k + 1}, 2)
+  def edge({0, -1}, k), do: {0, -k}
+  def edge({-1, -1}, k), do: div2({-k + 1, -k}, 2)
+  def edge({-1, 0}, k), do: {-k, 0}
+  def edge({-1, 1}, k), do: div2({-k, k}, 2)
   def part2(m) do
-    #XXX walk 3-block wide bands to find boundary, garbage collect, edge is 45-degree ramp and symmetric, inner blocks are alternating between odd and even steps
-    {n, n} = m |> Map.keys() |> Enum.max()
-    n = n + 1
     s = Enum.find_value(m, fn {p, c} -> c == ?S && p end)
-    for step <- 1..5000, reduce: {MapSet.new([s]), MapSet.new()} do
-      {last, prev} ->
-        IO.inspect({step, Enum.count(last)})
-        for {i, j} <- last, p <- [{i + 1, j}, {i, j + 1}, {i - 1, j}, {i, j - 1}],
-            m[mod(p, n)] != ?# and p not in prev, into: MapSet.new() do p end
-        #|> tap(&print(m, n, &1, step))
-        |> then(&{&1, last})
+    n = m |> Map.keys() |> Enum.max() |> then(fn {i, i} -> i + 1 end)
+    case n > 11 do
+      true -> {26501365, n * 5}
+      false -> {5000, n * 6}
     end
-    |> elem(0)
-    |> Enum.count()
+    |> bind({target_step, max_step})
+    Enum.reduce(1..max_step, {%{}, MapSet.new([s])}, fn step, {acc, set} ->
+      if Integer.mod(step, 10) == 0, do: IO.inspect(step)
+      for {i, j} <- set, p <- [{i + 1, j}, {i, j + 1}, {i - 1, j}, {i, j - 1}],
+          m[mod2(p, n)] != ?#, into: MapSet.new() do p end
+      |> bind(set)
+      Enum.reduce(set, %{}, fn p, cnt -> Map.update(cnt, div2(p, n), 1, &(&1 + 1)) end)
+      |> then(fn cnt -> {Map.put(acc, step, cnt), set} end)
+    end)
+    |> bind({hist, _})
+    print(hist[max_step])
+    #print(hist[target_step])
+    #IO.inspect(Map.values(hist[target_step]) |> Enum.sum())
+    Enum.map([{0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}], fn dir ->
+      Enum.reduce_while(0..n, {0, []}, fn k, {last_step, last_seq} ->
+        block = edge(dir, k)
+        step = Enum.find(1..max_step, &hist[&1][block])
+        case Enum.map(step..step + n * 2, &hist[&1][block]) do
+          ^last_seq -> {:halt, {k - 1, last_step, step - last_step, last_seq}}
+          seq -> {:cont, {step, seq}}
+        end
+        #|> IO.inspect(label: inspect {block})
+      end)
+      |> bind({k0, step0, cycle, seq})
+      k2 = k0 + div(target_step - step0, cycle)
+      k1 = k2 - 1
+      k2_cnt = Enum.at(seq, rem(target_step - step0, cycle))
+      k1_cnt = Enum.at(seq, rem(target_step - step0, cycle) + cycle)
+      even_step = rem(target_step, 2) == rem(max_step, 2) && max_step || max_step - 1
+      odd_cnt = hist[even_step][{0, 1}]
+      even_cnt = hist[even_step][{0, 0}]
+      case Tuple.product(dir) == 0 do
+        true -> {div(k1, 2), div(k1 - 1, 2)}
+        false ->
+          {odd, even} = {div(k1 - 2, 2), div(k1 - 1, 2)}
+          {odd * (odd + 1), even * (even + 0)}
+      end
+      |> bind({odd_blocks, even_blocks})
+      case Tuple.product(dir) == 0 do
+        true -> {1, 1}
+        false -> {k1 - 1, k2 - 1}
+      end
+      |> bind({k1_blocks, k2_blocks})
+      odd_cnt * odd_blocks + even_cnt * even_blocks + k1_cnt * k1_blocks + k2_cnt * k2_blocks
+      |> IO.inspect(label: inspect {k1_cnt, k1_blocks, k2_cnt, k2_blocks, odd_cnt, odd_blocks, even_cnt, even_blocks})
+    end)
+    |> Enum.sum()
+    #|> IO.inspect(label: :sum)
+    |> then(fn sum ->
+      case rem(target_step, 2) == rem(max_step, 2) do
+        true -> sum + hist[max_step][{0, 0}]
+        false -> sum + hist[max_step - 1][{0, 0}]
+      end
+    end)
   end
-  def print(m, n, set, step) do
-    x = {5, 5}
-    y = Enum.filter(set, &mod(&1, n) == x) |> Enum.map(fn {i, j} -> {floor(i / n), floor(j / n)} end)
-    if y != [] do
-      IO.puts("step: #{step} length: #{Enum.count(set)} count: #{length y} #{inspect y}")
-      m
+  def print(cnt) do
+    Map.keys(cnt)
+    |> Enum.unzip()
+    |> then(fn {is, js} -> {Enum.min_max(is), Enum.min_max(js)} end)
+    |> bind({{i1, i2}, {j1, j2}})
+    padding = Map.values(cnt) |> Enum.max() |> to_string() |> String.length()
+    for i <- i1..i2 do
+      for j <- j1..j2 do
+        cnt[{i, j}] || 0
+      end
+      |> Enum.map((& &1 |> to_string() |> String.pad_leading(padding)))
+      |> Enum.join(" ")
+      |> IO.puts()
     end
-    #{{i1, i2}, {j1, j2}} = Enum.unzip(set) |> then(fn {is, js} -> {Enum.min_max([0, 10 | is]), Enum.min_max([0, 10 | js])} end)
-    #for i <- i1..i2 do
-    #  for j <- j1..j2 do
-    #    p = {i, j}
-    #    q = mod(p, n)
-    #    case {p in set, q == x} do
-    #      {true, true} -> ?@
-    #      {true, _} -> ?O
-    #      {_, true} -> ?X
-    #      _ -> m[q]
-    #    end
-    #  end
-    #end
-    #|> Enum.join("\n")
-    #|> IO.puts()
   end
 end
 
@@ -224,7 +274,7 @@ _ = """
 .##..##.##.
 ...........
 """
-#input
+input
 |> D21.parse()
 |> D21.part2()
 |> IO.inspect(label: :part2, charlists: :as_lists)
