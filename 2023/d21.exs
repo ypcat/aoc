@@ -8,7 +8,6 @@ defmodule D21 do
   end
 
   def part1(m) do
-    #Enum.count(m, fn {_, c} -> c in [?., ?S] end)|>IO.inspect()
     s = Enum.find_value(m, fn {p, c} -> c == ?S && p end)
     for _ <- 1..64, reduce: MapSet.new([s]) do
       acc -> for {i, j} <- acc,
@@ -50,6 +49,7 @@ defmodule D21 do
     print(hist[max_step])
     #print(hist[target_step])
     #IO.inspect(Map.values(hist[target_step]) |> Enum.sum())
+    even_step = rem(target_step, 2) == rem(max_step, 2) && max_step || max_step - 1
     Enum.map([{0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}], fn dir ->
       Enum.reduce_while(0..n, {0, []}, fn k, {last_step, last_seq} ->
         block = edge(dir, k)
@@ -58,21 +58,19 @@ defmodule D21 do
           ^last_seq -> {:halt, {k - 1, last_step, step - last_step, last_seq}}
           seq -> {:cont, {step, seq}}
         end
-        #|> IO.inspect(label: inspect {block})
       end)
       |> bind({k0, step0, cycle, seq})
       k2 = k0 + div(target_step - step0, cycle)
       k1 = k2 - 1
       k2_cnt = Enum.at(seq, rem(target_step - step0, cycle))
       k1_cnt = Enum.at(seq, rem(target_step - step0, cycle) + cycle)
-      even_step = rem(target_step, 2) == rem(max_step, 2) && max_step || max_step - 1
       odd_cnt = hist[even_step][{0, 1}]
       even_cnt = hist[even_step][{0, 0}]
       case Tuple.product(dir) == 0 do
         true -> {div(k1, 2), div(k1 - 1, 2)}
         false ->
-          {odd, even} = {div(k1 - 2, 2), div(k1 - 1, 2)}
-          {odd * (odd + 1), even * (even + 0)}
+          {odd, even} = {div(k1, 2), div(k1 - 1, 2)}
+          {odd * (odd - 1), even * (even + 0)}
       end
       |> bind({odd_blocks, even_blocks})
       case Tuple.product(dir) == 0 do
@@ -84,13 +82,7 @@ defmodule D21 do
       |> IO.inspect(label: inspect {k1_cnt, k1_blocks, k2_cnt, k2_blocks, odd_cnt, odd_blocks, even_cnt, even_blocks})
     end)
     |> Enum.sum()
-    #|> IO.inspect(label: :sum)
-    |> then(fn sum ->
-      case rem(target_step, 2) == rem(max_step, 2) do
-        true -> sum + hist[max_step][{0, 0}]
-        false -> sum + hist[max_step - 1][{0, 0}]
-      end
-    end)
+    |> then(&hist[even_step][{0, 0}] + &1)
   end
   def print(cnt) do
     Map.keys(cnt)
