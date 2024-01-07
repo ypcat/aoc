@@ -1,6 +1,7 @@
 #!/usr/bin/env elixir
 
 defmodule D0 do
+  defmacro bind(value, var), do: quote(do: unquote(var) = unquote(value))
   def parse(input) do
     input
     |> String.split("\n", trim: true)
