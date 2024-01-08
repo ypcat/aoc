@@ -31,9 +31,8 @@ defmodule D22 do
       f = for x <- x1..x2, y <- y1..y2, reduce: f, do: (f -> Map.put(f, {x, y}, i))
       {g, h, f}
     end)
-    |> then(fn {g, _, _} -> g
-      |> Enum.count(fn {_, v} -> v.below |> Enum.all?(&length(g[&1].above) > 1) end)
-    end)
+    |> bind({g, _, _})
+    g |> Enum.count(fn {_, v} -> v.below |> Enum.all?(&length(g[&1].above) > 1) end)
   end
   def part2(input) do
     input
