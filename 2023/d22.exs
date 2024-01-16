@@ -20,7 +20,7 @@ defmodule D22 do
       false -> g |> Map.put(i, %{above: a, below: b})
     end
   end
-  def part1(input) do
+  def build_graph(input) do
     input
     |> Enum.with_index()
     |> Enum.sort_by(fn {[[_, _, z1], _], _} -> z1 end)
@@ -31,11 +31,27 @@ defmodule D22 do
       f = for x <- x1..x2, y <- y1..y2, reduce: f, do: (f -> Map.put(f, {x, y}, i))
       {g, h, f}
     end)
-    |> bind({g, _, _})
+    |> then(fn {g, _, _} -> g end)
+  end
+  def part1(input) do
+    g = build_graph(input)
     g |> Enum.count(fn {_, v} -> v.below |> Enum.all?(&length(g[&1].above) > 1) end)
   end
+  def pop(g, i) do
+    Enum.reduce(g[i].below, Map.delete(g, i), fn j, g ->
+      g = update_in(g[j].above, fn a -> Enum.reject(a, &(&1 == i)) end)
+      case g[j].above do
+        [] -> pop(g, j)
+        _ -> g
+      end
+    end)
+  end
   def part2(input) do
-    input
+    g = build_graph(input)
+    n = map_size(g)
+    g
+    |> Enum.map(fn {i, _} -> n - 1 - map_size(pop(g, i)) end)
+    |> Enum.sum()
   end
 end
 
@@ -1542,7 +1558,7 @@ _ = """
 1,1,8~1,1,9
 """
 
-#input
+input
 |> D22.parse()
 |> D22.part2()
 |> IO.inspect(label: :part2, charlists: :as_lists)
