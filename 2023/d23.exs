@@ -246,6 +246,7 @@ defmodule D23 do
     end
     |> Enum.max()
   end
+
   def add_edge(g, p, q, w) do
     g
     |> Map.update(p, [{q, w}], & &1 ++ [{q, w}])
