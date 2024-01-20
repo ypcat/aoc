@@ -39,7 +39,7 @@ defmodule D22 do
   end
   def pop(g, i) do
     Enum.reduce(g[i].below, Map.delete(g, i), fn j, g ->
-      g = update_in(g[j].above, fn a -> Enum.reject(a, &(&1 == i)) end)
+      g = update_in(g[j].above, &List.delete(&1, i))
       case g[j].above do
         [] -> pop(g, j)
         _ -> g
