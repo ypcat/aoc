@@ -246,8 +246,56 @@ defmodule D23 do
     end
     |> Enum.max()
   end
+  def add_edge(g, p, q, w) do
+    g
+    |> Map.update(p, [{q, w}], & &1 ++ [{q, w}])
+    |> Map.update(q, [{p, w}], & &1 ++ [{p, w}])
+  end
+  def build_graph2(input) do
+    for {{i, j}=p, c} <- input, c != ?#,
+        q <- [{i - 1, j}, {i, j - 1}], input[q] && input[q] != ?#,
+        reduce: %{} do
+      g -> add_edge(g, p, q, 1)
+    end
+  end
+  def del_vert(g, p) do
+    Enum.reduce(g[p], Map.delete(g, p), fn {q, _}, g -> update_in(g[q], &List.keydelete(&1, p, 0)) end)
+  end
+  def dfs2(_, goal, goal), do: 0
+  def dfs2(g, curr, goal) do
+    Enum.reduce(g[curr], nil, fn {next, w}, acc ->
+      case {acc, dfs2(del_vert(g, curr), next, goal)} do
+        {nil, nil} -> nil
+        {nil, n} -> n + w
+        {_, nil} -> acc
+        {_, n} -> max(acc, n + w)
+      end
+    end)
+  end
+  def compress(g, p, visited) do
+    case p in visited do
+      true -> g
+      false ->
+        visited = MapSet.put(visited, p)
+        case g[p] do
+          nil -> g
+          edges ->
+            g = case edges do
+              [{q1, w1}, {q2, w2}] -> g
+                |> del_vert(p)
+                |> update_in([q1], &[{q2, w1 + w2} | &1])
+                |> update_in([q2], &[{q1, w1 + w2} | &1])
+              _ -> g
+            end
+            Enum.reduce(edges, g, fn {q, _}, g -> compress(g, q, visited) end)
+        end
+    end
+  end
   def part2(input) do
-    input
+    g = build_graph2(input)
+    {start, goal} = Map.keys(g) |> Enum.min_max()
+    g = compress(g, start, MapSet.new())
+    dfs2(g, start, goal)
   end
 end
 
@@ -283,10 +331,33 @@ input
 |> IO.inspect(label: :part1, charlists: :as_lists)
 
 _ = """
+#.#####################
+#.......#########...###
+#######.#########.#.###
+###.....#.>.>.###.#.###
+###v#####.#v#.###.#.###
+###.>...#.#.#.....#...#
+###v###.#.#.#########.#
+###...#.#.#.......#...#
+#####.#.#.#######.#.###
+#.....#.#.#.......#...#
+#.#####.#.#.#########v#
+#.#...#...#...###...>.#
+#.#.#v#######v###.###v#
+#...#.>.#...>.>.#.###.#
+#####v#.#.###v#.#.###.#
+#.....#...#...#.#.#...#
+#.#########.###.#.#.###
+#...###...#...#...#.###
+###.###.#.###v#####v###
+#...#...#.#.>.>.#.>.###
+#.###.###.#.###.#.#v###
+#.....###...###...#...#
+#####################.#
 """
 
 input
 |> D23.parse()
 |> D23.part2()
-#|> IO.inspect(label: :part2, charlists: :as_lists)
+|> IO.inspect(label: :part2, charlists: :as_lists)
 
