@@ -546,32 +546,20 @@ Day10.part2(input) |> IO.inspect(label: :day10_part2)
 defmodule Day11 do
   import AOC
 
-  def expand(x) do
-    s = "#{x}"
-    n = String.length(s)
-    case {x, rem(n, 2)} do
-      {0, _} -> [1]
-      {_, 0} -> String.split_at(s, div(n, 2)) |> then(fn {a, b} -> [int(a), int(b)] end)
-      _ -> [x * 2024]
-    end
-  end
+  def blink("0", _), do: ["1"]
+  def blink(s, n) when rem(n, 2) == 1, do: ["#{int(s) * 2024}"]
+  def blink(s, n), do: String.split_at(s, div(n, 2)) |> Tuple.to_list() |> Enum.map(&"#{int(&1)}")
 
   def dp([], cache, acc), do: {cache, acc}
   def dp([{_, 0} | rest], cache, acc), do: dp(rest, cache, acc + 1)
-  def dp([{x, n} | rest], cache, acc) do
-    case cache[{x, n}] do
-      nil ->
-        {cache, count} = expand(x) |> Enum.map(&{&1, n - 1}) |> dp(cache, 0)
-        dp(rest, Map.put(cache, {x, n}, count), acc + count)
-      count ->
-        dp(rest, cache, acc + count)
-    end
+  def dp([k | rest], cache, acc) when is_map_key(cache, k), do: dp(rest, cache, acc + cache[k])
+  def dp([{s, n} | rest], cache, acc) do
+    {cache, count} = blink(s, byte_size(s)) |> Enum.map(&{&1, n - 1}) |> dp(cache, 0)
+    dp(rest, Map.put(cache, {s, n}, count), acc + count)
   end
 
   def solve(input, n) do
-    input
-    |> int2d()
-    |> hd()
+    String.split(input)
     |> Enum.map(&{&1, n})
     |> dp(%{}, 0)
     |> elem(1)
