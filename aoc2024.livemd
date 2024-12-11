@@ -434,14 +434,11 @@ Day7.part2(input) |> IO.inspect(label: :day7_part2)
 
 ```elixir
 defmodule Day8 do
-  def solve(s, g) do # g = fn {p, q} -> [{i, j}], p = q = {i, j}
-    m = AOC.s2map(s) # m = %{{i, j} => ch}
-    for({ch, ps} <- Enum.group_by(m, &elem(&1, 1), &elem(&1, 0)), ch != ?., # ps = [{i, j}]
-        p <- ps, q <- ps, p != q, t <- g.({p, q}) |> Enum.take_while(&m[&1]),
-        into: %MapSet{}, do: t) |> Enum.count()
-  end
+  def shift({{i1, j1}, {i2, j2}}), do: {{2 * i1 - i2, 2 * j1 - j2}, {i1, j1}}
 
-  def shift({{i1, j1}, {i2, j2}}), do: {{2 * i1 - i2, 2 * j1 - j2}, {i1, j1}} # {p, q} -> {2p-q, p}
+  def solve(s, g), do: Enum.count for(
+    m <- [AOC.s2map s], {ch, ps} <- Enum.group_by(m, &elem(&1, 1), &elem(&1, 0)), ch != ?.,
+    p <- ps, q <- ps, p != q, t <- g.({p, q}) |> Enum.take_while(&m[&1]), into: %MapSet{}, do: t)
 
   def part1(s), do: solve(s, &[shift(&1) |> elem(0)])
   def part2(s), do: solve(s, &Stream.unfold(&1, fn {p, q} -> {p, shift({p, q})} end))
@@ -547,23 +544,45 @@ Day10.part2(input) |> IO.inspect(label: :day10_part2)
 
 ```elixir
 defmodule Day11 do
-  #import AOC
+  import AOC
 
-  def part1(input) do
-    input
+  def expand(x) do
+    s = "#{x}"
+    n = String.length(s)
+    case {x, rem(n, 2)} do
+      {0, _} -> [1]
+      {_, 0} -> String.split_at(s, div(n, 2)) |> then(fn {a, b} -> [int(a), int(b)] end)
+      _ -> [x * 2024]
+    end
   end
 
-  def part2(input) do
-    input
+  def dp([], cache, acc), do: {cache, acc}
+  def dp([{_, 0} | rest], cache, acc), do: dp(rest, cache, acc + 1)
+  def dp([{x, n} | rest], cache, acc) do
+    case cache[{x, n}] do
+      nil ->
+        {cache, count} = expand(x) |> Enum.map(&{&1, n - 1}) |> dp(cache, 0)
+        dp(rest, Map.put(cache, {x, n}, count), acc + count)
+      count ->
+        dp(rest, cache, acc + count)
+    end
   end
+
+  def solve(input, n) do
+    input
+    |> int2d()
+    |> hd()
+    |> Enum.map(&{&1, n})
+    |> dp(%{}, 0)
+    |> elem(1)
+  end
+
+  def part1(input), do: solve(input, 25)
+  def part2(input), do: solve(input, 75)
 end
 
-input = ~S"""
-"""
-AOC.puts(input)
-
-_input = ~S"""
-"""
+input = "4610211 4 0 59 3907 201586 929 33750"
+#input = "125 17"
 
 Day11.part1(input) |> IO.inspect(label: :day11_part1)
 Day11.part2(input) |> IO.inspect(label: :day11_part2)
