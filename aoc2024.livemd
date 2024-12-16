@@ -414,17 +414,17 @@ Day10.part2(input) |> IO.inspect(label: :day10_part2)
 
 ```elixir
 defmodule Day11 do
-  import AOC
+  import AOC, only: [int: 1, divmod: 2]
 
   def blink("0", _), do: ["1"]
-  def blink(s, n) when rem(n, 2) == 1, do: ["#{int(s) * 2024}"]
-  def blink(s, n), do: String.split_at(s, div(n, 2)) |> Tuple.to_list() |> Enum.map(&"#{int(&1)}")
+  def blink(s, {_, 1}), do: ["#{int(s) * 2024}"]
+  def blink(s, {n, 0}), do: for([i] <- Regex.scan(~r/.{#{n}}/, s), do: "#{int i}")
 
   def dp([], cache, acc), do: {cache, acc}
   def dp([{_, 0} | rest], cache, acc), do: dp(rest, cache, acc + 1)
   def dp([k | rest], cache, acc) when is_map_key(cache, k), do: dp(rest, cache, acc + cache[k])
   def dp([{s, n} | rest], cache, acc) do
-    {cache, count} = blink(s, byte_size(s)) |> Enum.map(&{&1, n - 1}) |> dp(cache, 0)
+    {cache, count} = blink(s, divmod(byte_size(s), 2)) |> Enum.map(&{&1, n - 1}) |> dp(cache, 0)
     dp(rest, Map.put(cache, {s, n}, count), acc + count)
   end
 
