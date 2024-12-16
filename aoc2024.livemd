@@ -417,8 +417,8 @@ defmodule Day11 do
   import AOC, only: [int: 1, divmod: 2]
 
   def blink("0", _), do: ["1"]
-  def blink(s, {_, 1}), do: ["#{int(s) * 2024}"]
   def blink(s, {n, 0}), do: for([i] <- Regex.scan(~r/.{#{n}}/, s), do: "#{int i}")
+  def blink(s, _), do: ["#{int(s) * 2024}"]
 
   def dp([], cache, acc), do: {cache, acc}
   def dp([{_, 0} | rest], cache, acc), do: dp(rest, cache, acc + 1)
