@@ -4,9 +4,8 @@
 
 ```elixir
 defmodule AOC do
-  def int(s) do
-    String.to_integer(s)
-  end
+  def int(s), do: String.to_integer(s)
+  def str(x), do: to_string(x)
 
   def int2d(s, sep \\ ~r/[^\d]+/) do
     String.split(s, "\n", trim: true)
@@ -424,33 +423,20 @@ Day10.part2(input) |> IO.inspect(label: :day10_part2)
 
 ```elixir
 defmodule Day11 do
-  import AOC, only: [int: 1, divmod: 2]
+  import AOC, only: [int: 1, str: 1, divmod: 2, cache: 2]
 
-  def blink("0", _), do: ["1"]
-  def blink(s, {n, 0}), do: for([i] <- Regex.scan(~r/.{#{n}}/, s), do: "#{int i}")
-  def blink(s, _), do: ["#{int(s) * 2024}"]
+  def blink(i), do: blink(i, divmod(byte_size(str i), 2))
+  def blink(i, {m, 0}), do: for([s] <- Regex.scan(~r/.{#{m}}/, str i), do: int s)
+  def blink(i, _), do: [max(1, i * 2024)]
 
-  def dp([], cache, acc), do: {cache, acc}
-  def dp([{_, 0} | rest], cache, acc), do: dp(rest, cache, acc + 1)
-  def dp([k | rest], cache, acc) when is_map_key(cache, k), do: dp(rest, cache, acc + cache[k])
-  def dp([{s, n} | rest], cache, acc) do
-    {cache, count} = blink(s, divmod(byte_size(s), 2)) |> Enum.map(&{&1, n - 1}) |> dp(cache, 0)
-    dp(rest, Map.put(cache, {s, n}, count), acc + count)
-  end
+  def dp(i, n), do: cache({i, n}, do: n < 1 && 1 || Enum.sum(for j <- blink(i), do: dp(j, n - 1)))
 
-  def solve(input, n) do
-    String.split(input)
-    |> Enum.map(&{&1, n})
-    |> dp(%{}, 0)
-    |> elem(1)
-  end
-
+  def solve(input, n), do: Enum.sum(for s <- String.split(input), do: dp(int(s), n))
   def part1(input), do: solve(input, 25)
   def part2(input), do: solve(input, 75)
 end
 
 input = "4610211 4 0 59 3907 201586 929 33750"
-#input = "125 17"
 
 Day11.part1(input) |> IO.inspect(label: :day11_part1)
 #Day11.part2(input) |> IO.inspect(label: :day11_part2)
@@ -777,8 +763,6 @@ Day18.part1(input) |> IO.inspect(label: :day18_part1, charlists: :as_lists)
 #Day18.part2(input) |> IO.inspect(label: :day18_part2, charlists: :as_lists)
 ```
 
-## new
-
 ```elixir
 defmodule Day19 do
   import AOC
@@ -800,4 +784,30 @@ input = "buu, ubg, gub, wbwu, rrgrgg, urrwr, grwb, ubw, ubrbr, ubgb, gbw, rbrwgw
 
 #Day19.part1(input) |> IO.inspect(label: :day19_part1, charlists: :as_lists)
 #Day19.part2(input) |> IO.inspect(label: :day19_part2, charlists: :as_lists)
+```
+
+## new
+
+```elixir
+defmodule Day20 do
+  #import AOC
+
+  def part1(input) do
+    input
+  end
+
+  def part2(input) do
+    input
+  end
+end
+
+input = ~S"""
+"""
+|> AOC.puts()
+
+_input = ~S"""
+"""
+
+Day20.part1(input) |> IO.inspect(label: :day20_part1, charlists: :as_lists)
+Day20.part2(input) |> IO.inspect(label: :day20_part2, charlists: :as_lists)
 ```
