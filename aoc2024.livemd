@@ -892,57 +892,39 @@ end
 defmodule Day21 do
   import AOC
 
-  def corner(m, c, b) do
-    d = case Enum.at(b, 0) do
-      ?> -> {0, 1}
-      ?< -> {0, -1}
-      ?v -> {1, 0}
-      ?^ -> {-1, 0}
-      _ -> {0, 0}
-    end
-    m[add2(m[c], mul2(d, length(b)))] == ?\s
-  end
-
   def gen(cs, m, c1 \\ ?A, acc \\ [])
-  def gen([], _, _, acc), do: acc |> List.flatten()
+  def gen([], _, _, acc), do: acc |> Enum.reverse() |> List.flatten()
   def gen([c2|cs], m, c1, acc) do
-    {di, dj} = sub2(m[c2], m[c1])
-    a = dup(di > 0 && ?v || ?^, abs(di))
-    b = dup(dj > 0 && ?> || ?<, abs(dj))
-    [a, b] = dj < 0 && [b, a] || [a, b] # < first
-    [a, b] = corner(m, c1, a) && [b, a] || [a, b] # < first
-    acc = acc ++ a ++ b ++ [?A]
-    gen(cs, m, c2, acc)
+    {dy, dx} = sub2(m[c2], m[c1])
+    v = dup((dy > 0 && ?v || ?^), abs(dy))
+    h = dup((dx > 0 && ?> || ?<), abs(dx))
+    (dx < 0 && m[add2(m[c1], {0, dx})] != ?\s || m[add2(m[c1], {dy, 0})] == ?\s) &&
+      gen(cs, m, c2, [?A, v, h | acc]) || # true, horizontal first
+      gen(cs, m, c2, [?A, h, v | acc]) # false, vertical first
   end
 
-  def k2map(s), do: for({k, v} <- s2map(s), reduce: %{}, do: (m -> Map.merge m, %{k => v, v => k}))
+  def k2map(s), do: for({k, v} <- s2map(s), into: s2map(s), do: {v, k})
 
   def part1(input) do
     m1 = k2map("789\n456\n123\n 0A")
     m2 = k2map(" ^A\n<v>")
     for s <- String.split(input, "\n", trim: true) do
-      n = int(String.slice s, 0..2)
-      p = String.to_charlist(s)
-      |> gen(m1)
-      |> gen(m2)
-      |> gen(m2)
-      len = length(p)
-      #IO.inspect("#{s} #{len} #{p}")
-      len * n
+      String.to_charlist(s)
+      |> gen(m1) |> gen(m2) |> gen(m2)
+      |> then(&length(&1) * int(String.slice s, 0..2))
     end
     |> Enum.sum()
   end
 
-  def splitp(p) do
-    chunk_fun = fn ?A, acc -> {:cont, Enum.reverse([?A|acc]), []}
+  def splitp(p) do # '123A45A' -> ['123A', '45A']
+    chunk_fun = fn ?A, acc -> {:cont, Enum.reverse([?A | acc]), []}
                     c, acc -> {:cont, [c | acc]} end
     Enum.chunk_while(p, [], chunk_fun, fn acc -> {:cont, acc} end)
   end
 
   def dp(pm, m) do
     for {p, n} <- pm, p <- splitp(p), reduce: %{} do
-      pm ->
-        Map.update(pm, gen(p, m), n, & &1 + n)
+      pm -> Map.update(pm, gen(p, m), n, & &1 + n)
     end
   end
 
@@ -953,9 +935,7 @@ defmodule Day21 do
       n = int(String.slice s, 0..2)
       p = String.to_charlist(s) |> gen(m1)
       pm = for _ <- 1..25, reduce: %{p => 1}, do: (pm -> dp(pm, m2))
-      len = Enum.sum for {p, n} <- pm, do: length(p) * n
-      #IO.inspect({s, len, pm})
-      len * n
+      n * Enum.sum for {p, n} <- pm, do: length(p) * n
     end
     |> Enum.sum()
   end
@@ -963,10 +943,8 @@ end
 
 input = "279A\n341A\n459A\n540A\n085A\n"
 
-input1 = "029A\n980A\n179A\n456A\n379A\n"
-
-Day21.part1(input) |> IO.inspect(label: :day21_part1, charlists: :as_lists)
-Day21.part2(input) |> IO.inspect(label: :day21_part2, charlists: :as_lists)
+123096 = Day21.part1(input) |> IO.inspect(label: :day21_part1, charlists: :as_lists)
+154517692795352 = Day21.part2(input) |> IO.inspect(label: :day21_part2, charlists: :as_lists)
 ```
 
 ## new
