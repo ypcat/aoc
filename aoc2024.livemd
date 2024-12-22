@@ -890,55 +890,40 @@ end
 
 ```elixir
 defmodule Day21 do
-  import AOC
+  import AOC, only: [s2map: 1, sub2: 2, dup: 2, add2: 2, int: 1]
+
+  def k2map(s), do: for({k, v} <- s2map(s), into: s2map(s), do: {v, k})
 
   def gen(cs, m, c1 \\ ?A, acc \\ [])
   def gen([], _, _, acc), do: acc |> Enum.reverse() |> List.flatten()
   def gen([c2|cs], m, c1, acc) do
     {dy, dx} = sub2(m[c2], m[c1])
-    v = dup((dy > 0 && ?v || ?^), abs(dy))
-    h = dup((dx > 0 && ?> || ?<), abs(dx))
+    {v, h} = {dup((dy > 0 && ?v || ?^), abs(dy)), dup((dx > 0 && ?> || ?<), abs(dx))}
     (dx < 0 && m[add2(m[c1], {0, dx})] != ?\s || m[add2(m[c1], {dy, 0})] == ?\s) &&
       gen(cs, m, c2, [?A, v, h | acc]) || # true, horizontal first
       gen(cs, m, c2, [?A, h, v | acc]) # false, vertical first
   end
 
-  def k2map(s), do: for({k, v} <- s2map(s), into: s2map(s), do: {v, k})
-
-  def part1(input) do
-    m1 = k2map("789\n456\n123\n 0A")
-    m2 = k2map(" ^A\n<v>")
-    for s <- String.split(input, "\n", trim: true) do
-      String.to_charlist(s)
-      |> gen(m1) |> gen(m2) |> gen(m2)
-      |> then(&length(&1) * int(String.slice s, 0..2))
-    end
-    |> Enum.sum()
-  end
-
   def splitp(p) do # '123A45A' -> ['123A', '45A']
-    chunk_fun = fn ?A, acc -> {:cont, Enum.reverse([?A | acc]), []}
-                    c, acc -> {:cont, [c | acc]} end
-    Enum.chunk_while(p, [], chunk_fun, fn acc -> {:cont, acc} end)
+    chunk = fn c, acc -> c == ?A && {:cont, Enum.reverse([?A | acc]), []} || {:cont, [c | acc]} end
+    Enum.chunk_while(p, [], chunk, fn acc -> {:cont, acc} end)
   end
 
   def dp(pm, m) do
-    for {p, n} <- pm, p <- splitp(p), reduce: %{} do
-      pm -> Map.update(pm, gen(p, m), n, & &1 + n)
-    end
+    for {p, n} <- pm, p <- splitp(p), reduce: %{}, do: (pm -> Map.update(pm, gen(p, m), n, &n + &1))
   end
 
-  def part2(input) do
+  def solve(input, depth) do
     m1 = k2map("789\n456\n123\n 0A")
     m2 = k2map(" ^A\n<v>")
-    for s <- String.split(input, "\n", trim: true) do
-      n = int(String.slice s, 0..2)
-      p = String.to_charlist(s) |> gen(m1)
-      pm = for _ <- 1..25, reduce: %{p => 1}, do: (pm -> dp(pm, m2))
-      n * Enum.sum for {p, n} <- pm, do: length(p) * n
-    end
-    |> Enum.sum()
+    Enum.sum(for s <- String.split(input, "\n", trim: true) do
+      pm = for _ <- 1..depth, reduce: %{gen(to_charlist(s), m1) => 1}, do: (pm -> dp(pm, m2))
+      int(String.slice s, 0..2) * Enum.sum(for {p, n} <- pm, do: length(p) * n)
+    end)
   end
+
+  def part1(input), do: solve(input, 2)
+  def part2(input), do: solve(input, 25)
 end
 
 input = "279A\n341A\n459A\n540A\n085A\n"
@@ -946,8 +931,6 @@ input = "279A\n341A\n459A\n540A\n085A\n"
 123096 = Day21.part1(input) |> IO.inspect(label: :day21_part1, charlists: :as_lists)
 154517692795352 = Day21.part2(input) |> IO.inspect(label: :day21_part2, charlists: :as_lists)
 ```
-
-## new
 
 ```elixir
 defmodule Day22 do
@@ -983,4 +966,30 @@ input = "6731044\n5953403\n16612514\n5099965\n2695721\n9419295\n9708091\n7902959
 
 13234715490 = Day22.part1(input) |> IO.inspect(label: :day22_part1, charlists: :as_lists)
 1490 = Day22.part2(input) |> IO.inspect(label: :day22_part2, charlists: :as_lists)
+```
+
+## new
+
+```elixir
+defmodule Day23 do
+  #import AOC
+
+  def part1(input) do
+    input
+  end
+
+  def part2(input) do
+    input
+  end
+end
+
+input = ~S"""
+"""
+|> AOC.puts()
+
+_input = ~S"""
+"""
+
+Day23.part1(input) |> IO.inspect(label: :day23_part1, charlists: :as_lists)
+Day23.part2(input) |> IO.inspect(label: :day23_part2, charlists: :as_lists)
 ```
