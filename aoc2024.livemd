@@ -953,12 +953,12 @@ defmodule Day22 do
         ps
         |> Enum.zip_with(tl(ps), fn x, y -> y - x end)
         |> Enum.chunk_every(4, 1, :discard)
-        |> Enum.map(&Enum.reduce(&1, 0, fn x, acc -> acc * 32 + x + 10 end)) # faster key
+        |> Enum.map(&Enum.reduce(&1, 0, fn x, acc -> acc * 19 + x + 9 end)) # faster key
         |> Enum.zip(Enum.slice(ps, 4..-1//1))
         |> Enum.reduce(%{}, fn {k, v}, acc -> Map.put_new(acc, k, v) end)
-        |> Enum.reduce(acc, fn {k, v}, acc -> Map.update(acc, k, [v], &[v | &1]) end)
+        |> Enum.reduce(acc, fn {k, v}, acc -> Map.update(acc, k, v, &v + &1) end)
     end
-    |> Enum.map(fn {_, v} -> Enum.sum(v) end)
+    |> Map.values()
     |> Enum.max()
   end
 end
