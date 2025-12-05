@@ -14,7 +14,7 @@ defmodule AOC do
   def dup(x, n), do: for(_ <- 1..n//1, do: x)
 
   # int2d("1 2 3\n4 5 6") = [[1,2,3], [4,5,6]]
-  def int2d(s, sep \\ ~r/[^\d]+/) do
+  def int2d(s, sep \\ ~r/\D+/) do
     String.split(s, "\n", trim: true)
     |> Enum.map(fn s -> for i <- String.split(s, sep), i != "", do: int(i) end)
   end
@@ -194,7 +194,7 @@ defmodule Day4 do
     input |> s2map() |> solve2(0)
   end
   def find(m) do
-    for({p, c} <- m, c == ?@, length(for d <- dir8(), m[add2(p, d)] == ?@, do: 1) < 4, do: p)
+    for({p, c} <- m, c == ?@, Enum.count(dir8(), &m[add2(p, &1)] == ?@) < 4, do: p)
   end
   def solve2(m, acc) do
     case find(m) do
@@ -208,4 +208,31 @@ input = "..@@.@@@@.\n@@@.@.@.@@\n@@@@@.@.@@\n@.@@@@..@.\n@@.@@@@.@@\n.@@@@@@@.@\
 
 Day4.part1(input) |> IO.inspect(label: :day4_part1)
 Day4.part2(input) |> IO.inspect(label: :day4_part2)
+```
+
+```elixir
+defmodule Day5 do
+  import AOC
+  def part1(input) do
+    [rs, is] = input |> String.trim() |> String.split("\n\n")
+    rs = int2d(rs)
+    is = int2d(is) |> List.flatten()
+    Enum.count(is, fn i ->
+      Enum.any?(rs, fn [a, b] -> a <= i && i <= b end) 
+    end)
+  end
+  def part2(input) do
+    input |> String.split("\n\n") |> hd() |> int2d() |> Enum.sort()
+    |> Enum.reduce([], &union/2)
+    |> Enum.sum_by(fn [a, b] -> b - a + 1 end)
+  end
+  def union([a, b], []), do: [[a, b]]
+  def union([a, b], [[c, d] | rs]) when a > d, do: [[a, b], [c, d] | rs]
+  def union([a, b], [[c, d] | rs]), do: [[min(a, c), max(b, d)] | rs]
+end
+
+input = "3-5\n10-14\n16-20\n12-18\n\n1\n5\n8\n11\n17\n32\n"
+
+Day5.part1(input) |> IO.inspect(label: :day5_part1)
+Day5.part2(input) |> IO.inspect(label: :day5_part2)
 ```
