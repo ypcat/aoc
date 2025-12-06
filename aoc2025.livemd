@@ -14,8 +14,8 @@ defmodule AOC do
   def dup(x, n), do: for(_ <- 1..n//1, do: x)
 
   # int2d("1 2 3\n4 5 6") = [[1,2,3], [4,5,6]]
-  def int2d(s, sep \\ ~r/\D+/) do
-    String.split(s, "\n", trim: true)
+  def int2d(s, sep \\ ~r/\D+/, sep2 \\ "\n") do
+    String.split(s, sep2, trim: true)
     |> Enum.map(fn s -> for i <- String.split(s, sep), i != "", do: int(i) end)
   end
 
@@ -235,4 +235,28 @@ input = "3-5\n10-14\n16-20\n12-18\n\n1\n5\n8\n11\n17\n32\n"
 
 Day5.part1(input) |> IO.inspect(label: :day5_part1)
 Day5.part2(input) |> IO.inspect(label: :day5_part2)
+```
+
+```elixir
+defmodule Day6 do
+  import AOC
+  def part1(input) do
+    {a, [b]} = str2d(input, "\n", ~r/ +/) |> Enum.split(-1)
+    a = Enum.zip_with(a, &for(i <- &1, do: int i))
+    b = Enum.map(b, &get_op/1)
+    Enum.zip_reduce(a, b, 0, fn r, op, acc -> op.(r) + acc end)
+  end
+  def part2(input) do
+    {a, [b]} = str2d(input, "\n", "") |> Enum.split(-1)
+    a = Enum.zip_with(a, &String.trim str(&1)) |> Enum.join("\n") |> int2d("\n", "\n\n")
+    b = Enum.flat_map(b, &List.wrap get_op &1)
+    Enum.zip_reduce(a, b, 0, fn r, op, acc -> op.(r) + acc end)
+  end
+  def get_op(s), do: %{"+" => &Enum.sum/1, "*" => &Enum.product/1}[s]
+end
+
+input = "123 328  51 64 \n 45 64  387 23 \n  6 98  215 314\n*   +   *   +  \n"
+
+Day6.part1(input) |> IO.inspect(label: :day6_part1)
+Day6.part2(input) |> IO.inspect(label: :day6_part2)
 ```
