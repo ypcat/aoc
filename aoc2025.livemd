@@ -37,6 +37,10 @@ defmodule AOC do
       into: %{}, do: {{i, j}, c}
   end
 
+  def up(p \\ {0, 0}), do: add2(p, {-1, 0})
+  def down(p \\ {0, 0}), do: add2(p, {1, 0})
+  def left(p \\ {0, 0}), do: add2(p, {0, -1})
+  def right(p \\ {0, 0}), do: add2(p, {0, 1})
   def add2({x, y}, {u, v}), do: {x + u, y + v}
   def sub2({x, y}, {u, v}), do: {x - u, y - v}
   def mul2({x, y}, k), do: {x * k, y * k}
@@ -259,4 +263,40 @@ input = "123 328  51 64 \n 45 64  387 23 \n  6 98  215 314\n*   +   *   +  \n"
 
 Day6.part1(input) |> IO.inspect(label: :day6_part1)
 Day6.part2(input) |> IO.inspect(label: :day6_part2)
+```
+
+```elixir
+defmodule Day7 do
+  import AOC
+  def part1(input) do
+    m = s2map(input)
+    for {p, v} <- Enum.sort(m), reduce: Map.put(m, :c, 0) do m ->
+      case {v, m[up p], m.c} do
+        {?., b, _} when b in [?S, ?|] -> %{m | p => ?|}
+        {?^, b, c} when b in [?S, ?|] -> %{m | left(p) => ?|, right(p) => ?|, c: c + 1}
+        _ -> m
+      end
+    end
+    |> Map.get(:c)
+  end
+  def part2(input) do
+    m = s2map(input)
+    [s] = for {p, ?S} <- m, do: p
+    solve2(m, s)
+  end
+  def solve2(m, p) do
+    cache p do
+      case m[p] do
+        nil -> 1
+        ?^ -> solve2(m, left(p)) + solve2(m, right(p))
+        _ -> solve2(m, down(p))
+      end
+    end
+  end
+end
+
+input = ".......S.......\n...............\n.......^.......\n...............\n......^.^......\n...............\n.....^.^.^.....\n...............\n....^.^...^....\n...............\n...^.^...^.^...\n...............\n..^...^.....^..\n...............\n.^.^.^.^.^...^.\n...............\n"
+
+Day7.part1(input) |> IO.inspect(label: :day7_part1)
+Day7.part2(input) |> IO.inspect(label: :day7_part2)
 ```
