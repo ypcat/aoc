@@ -300,3 +300,43 @@ input = ".......S.......\n...............\n.......^.......\n...............\n...
 Day7.part1(input) |> IO.inspect(label: :day7_part1)
 Day7.part2(input) |> IO.inspect(label: :day7_part2)
 ```
+
+```elixir
+defmodule Day8 do
+  import AOC
+  def part1(input) do
+    ps = int2d(input)
+    for(p <- ps, q <- ps, p < q, do: {dist(p, q), p, q})
+    |> Enum.sort()
+    |> Enum.take(length(ps) < 100 && 10 || 1000)
+    |> Enum.map(fn {_, p, q} -> {p, q} end)
+    |> k2g()
+    |> all_cc([])
+    |> Enum.map(&Enum.count/1)
+    |> Enum.sort()
+    |> Enum.take(-3)
+    |> Enum.product()
+  end
+  def part2(input) do
+    ps = int2d(input)
+    for(p <- ps, q <- ps, p < q, do: {dist(p, q), p, q})
+    |> Enum.sort()
+    |> solve2(length(ps))
+  end
+  def dist([a, b, c], [d, e, f]), do: (a-d)**2+(b-e)**2+(c-f)**2
+  def all_cc(g, acc) when map_size(g) == 0, do: acc
+  def all_cc(g, acc) do
+    c = cc(g) |> hd() |> Enum.to_list()
+    Map.drop(g, c) |> all_cc([c | acc])
+  end
+  def solve2([{_, p, q}|rest], n, g \\ %{}) do
+    g = g |> Map.update(p, [q], &[q | &1]) |> Map.update(q, [p], &[p | &1])
+    (cc(g) |> hd() |> Enum.count()) == n && hd(p)*hd(q) || solve2(rest, n, g)
+  end
+end
+
+input = "162,817,812\n57,618,57\n906,360,560\n592,479,940\n352,342,300\n466,668,158\n542,29,236\n431,825,988\n739,650,466\n52,470,668\n216,146,977\n819,987,18\n117,168,530\n805,96,715\n346,949,466\n970,615,88\n941,993,340\n862,61,35\n984,92,344\n425,690,689\n"
+
+Day8.part1(input) |> IO.inspect(label: :day8_part1)
+Day8.part2(input) |> IO.inspect(label: :day8_part2)
+```
