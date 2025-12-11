@@ -44,6 +44,10 @@ defmodule AOC do
   def add2({x, y}, {u, v}), do: {x + u, y + v}
   def sub2({x, y}, {u, v}), do: {x - u, y - v}
   def mul2({x, y}, k), do: {x * k, y * k}
+  def dot2({x1, y1}, {x2, y2}), do: x1 * x2 + y1 * y2
+  def eq2({x1, y1}, {x2, y2}), do: x1 == x2 && y1 == y2
+  def lt2({x1, y1}, {x2, y2}), do: x1 < x2 && y1 < y2
+  def gt2({x1, y1}, {x2, y2}), do: x1 > x2 && y1 > y2
   def l1norm({x1, y1}, {x2, y2}), do: abs(x1 - x2) + abs(y1 - y2)
   def dir4(), do: [{1, 0}, {0, 1}, {-1, 0}, {0, -1}]
   def dir8(), do: [{-1, -1}, {-1, 0}, {-1, 1}, { 0, -1}, { 0, 1}, { 1, -1}, { 1, 0}, { 1, 1}]
@@ -339,4 +343,86 @@ input = "162,817,812\n57,618,57\n906,360,560\n592,479,940\n352,342,300\n466,668,
 
 Day8.part1(input) |> IO.inspect(label: :day8_part1)
 Day8.part2(input) |> IO.inspect(label: :day8_part2)
+```
+
+```elixir
+defmodule Day9 do
+  import AOC
+  def part1(input) do
+    ps = input |> int2d() |> Enum.map(&List.to_tuple/1)
+    Enum.max for p <- ps, q <- ps, p < q, do: area(p, q)
+  end
+  def part2(input) do
+    ps = input |> int2d() |> Enum.map(&List.to_tuple/1)
+    es = Enum.zip(ps, tl(ps) ++ [hd ps])
+    {xs, ys} = Enum.unzip(ps)
+    xs = Enum.uniq(xs) |> Enum.sort()
+    ys = Enum.uniq(ys) |> Enum.sort()
+    (for p <- ps, q <- ps, p < q, valid(p, q, es, xs, ys), do: {area(p, q), p, q})
+    |> Enum.max()
+    |> IO.inspect(charlists: :as_lists)
+  end
+  def area({x1, y1}, {x2, y2}), do: (abs(x1 - x2) + 1) * (abs(y1 - y2) + 1)
+  def valid({x1, y1}, {x2, y2}, es, xs, ys) do
+    {x1, x2} = Enum.min_max([x1, x2])
+    {y1, y2} = Enum.min_max([y1, y2])
+    xs = for x <- xs, x1 <= x, x <= x2, do: x
+    ys = for y <- ys, y1 <= y, y <= y2, do: y
+    for {x3, x4} <- Enum.zip(xs, tl(xs)), {y3, y4} <- Enum.zip(ys, tl(ys)) do
+      valid2({(x3+x4)/2, (y3+y4)/2}, es)
+    end
+    |> Enum.all?(& &1)
+  end
+  def valid2({x, y}, es) do
+    cache {x, y} do
+      for {{x1, y1}, {x2, y2}} <- es, y1 == y2, y < y1, (x-x1)*(x-x2) < 0, reduce: nil, do: (b -> !b)
+    end
+  end
+end
+
+input = "7,1\n11,1\n11,7\n9,7\n9,5\n2,5\n2,3\n7,3\n"
+
+Day9.part1(input) |> IO.inspect(label: :day9_part1)
+Day9.part2(input) |> IO.inspect(label: :day9_part2)
+```
+
+```elixir
+defmodule Day10 do
+  import AOC
+  def part1(input) do
+    for parts <- input |> str2d("\n", " ") do
+      state = hd(parts) |> String.slice(1..-2//1) |> to_charlist() |> Enum.with_index() |> Enum.into(%{}, fn {c, i} -> {i, c == ?#} end)
+      buttons = Enum.slice(parts, 1..-2//1) |> Enum.join("\n") |> int2d()
+      solve1([state], buttons, 0)
+    end
+    |> Enum.sum()
+  end
+  def part2(input) do
+    input
+  end
+  def solve1(states, buttons, step) do
+    if step > 10, do: exit(1)
+    case Enum.any?(states, &goal/1) do
+      true -> step
+      _ ->
+        Enum.flat_map(states, fn state ->
+          for ks <- buttons do
+            for k <- ks, reduce: state do
+              m -> %{m | k => !m[k]}
+            end
+          end
+        end)
+        |> Enum.uniq()
+        |> solve1(buttons, step + 1)
+    end
+  end
+  def goal(state) do
+    Enum.all?(state, fn {_, v} -> v == false end)
+  end
+end
+
+input = "[.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}\n[...#.] (0,2,3,4) (2,3) (0,4) (0,1,2) (1,2,3,4) {7,5,12,7,2}\n[.###.#] (0,1,2,3,4) (0,3,4) (0,1,2,4,5) (1,2) {10,11,11,5,10,5}\n"
+
+Day10.part1(input) |> IO.inspect(label: :part1)
+Day10.part2(input) |> IO.inspect(label: :part2)
 ```
